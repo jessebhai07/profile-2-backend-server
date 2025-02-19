@@ -147,7 +147,7 @@ app.get("/api/blogs/:blog_id", async (req, res) => {
 });
 
 // Carousel API
-app.post("/api/carousel", upload.single("image"), async (req, res) => {
+app.post("/api/carouselupload", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
