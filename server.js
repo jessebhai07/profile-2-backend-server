@@ -37,7 +37,6 @@ const ImageModel = mongoose.model("Image", ImageSchema);
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
@@ -73,7 +72,6 @@ app.post("/api/carousel", upload.single("image"), async (req, res) => {
     res.status(500).json({ message: "Server Error", error });
   }
 });
-
 
 // Fetch all images (Carousel)
 app.get("/api/carousel", async (req, res) => {
@@ -123,7 +121,6 @@ const cloudinaryStorage = new CloudinaryStorage({
 
 const uploadCloudinary = multer({ storage: cloudinaryStorage });
 
-//API to upload events data
 // Define Mongoose Schema for Events
 const EventImageSchema = new mongoose.Schema({
   imageUrl: String,
@@ -173,8 +170,6 @@ app.get("/api/events", async (req, res) => {
   }
 });
 
-
-
 // API to upload blog data
 app.post("/api/blogs", uploadCloudinary.single("blog_image"), async (req, res) => {
   try {
@@ -221,6 +216,9 @@ app.get("/api/blogs/:blog_id", async (req, res) => {
   }
 });
 
-// Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+
+
+// Export the app (required for Vercel)
+module.exports = app;
