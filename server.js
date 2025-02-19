@@ -37,6 +37,11 @@ const ImageModel = mongoose.model("Image", ImageSchema);
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+
+app.get("/", (req, res) => {
+  res.send("Hello, World!");
+});
+
 // Upload API (Carousel)
 app.post("/api/carousel", upload.single("image"), async (req, res) => {
   try {
