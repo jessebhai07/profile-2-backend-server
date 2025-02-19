@@ -17,5 +17,16 @@
     "CLOUDINARY_CLOUD_NAME": "ddssf6cm6",
     "CLOUDINARY_API_KEY": "161164621541946",
     "CLOUDINARY_API_SECRET": "qRM_p7dTLhA0An1HKWnl9EqYngU"
+  },
+  "functions": {
+    "api/**/*.js": {
+      "memory": 128,
+      "maxDuration": 60
+    }
+  },
+  "build": {
+    "env": {
+      "NODE_DEBUG": "express"
+    }
   }
 }
