@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    }
+  ],
+  "env": {
+    "MONGO_URI": "mongodb+srv://native202:native202@cluster0.phmhs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    "CLOUDINARY_CLOUD_NAME": "ddssf6cm6",
+    "CLOUDINARY_API_KEY": "161164621541946",
+    "CLOUDINARY_API_SECRET": "qRM_p7dTLhA0An1HKWnl9EqYngU"
+  }
+}
