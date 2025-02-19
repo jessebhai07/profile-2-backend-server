@@ -21,17 +21,20 @@ cloudinary.config({
 
 // MongoDB Connection
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.log(err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-// Define Mongoose Schema for Images
-const ImageSchema = new mongoose.Schema({
+// Define Mongoose Schema for Carousel Images
+const CarouselImageSchema = new mongoose.Schema({
   imageUrl: String,
   link: String,
 });
 
-const ImageModel = mongoose.model("Image", ImageSchema);
+const CarouselImage = mongoose.model("CarouselImage", CarouselImageSchema);
 
 // Multer Storage (Memory)
 const storage = multer.memoryStorage();
@@ -46,29 +49,29 @@ app.post("/api/carousel", upload.single("image"), async (req, res) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder: "carousel" },
       async (error, cloudinaryResult) => {
-        if (error) return res.status(500).json({ message: "Upload failed" });
+        if (error) return res.status(500).json({ message: "Upload failed", error });
 
         // Save URLs to MongoDB
-        const image = new ImageModel({
-          imageUrl: cloudinaryResult.secure_url, // Cloudinary URL
-          link: req.body.link, // Custom URL from the client
+        const image = new CarouselImage({
+          imageUrl: cloudinaryResult.secure_url,
+          link: req.body.link,
         });
 
         await image.save();
         res.json(image);
       }
     );
-    
+
     streamifier.createReadStream(req.file.buffer).pipe(stream);
   } catch (error) {
     res.status(500).json({ message: "Server Error", error });
   }
 });
 
-// Fetch all images (Carousel)
+// Fetch all carousel images
 app.get("/api/carousel", async (req, res) => {
   try {
-    const images = await ImageModel.find();
+    const images = await CarouselImage.find();
     res.json(images);
   } catch (error) {
     res.status(500).json({ error: "Error fetching images" });
@@ -102,7 +105,7 @@ const getNextSequenceValue = async (sequenceName) => {
   return sequenceDocument.sequence_value;
 };
 
-// Configure Multer for Cloudinary
+// Configure Multer for Cloudinary (Blog Uploads)
 const cloudinaryStorage = new CloudinaryStorage({
   cloudinary,
   params: {
@@ -132,7 +135,7 @@ app.post("/api/blogs", uploadCloudinary.single("blog_image"), async (req, res) =
     await blog.save();
     res.status(201).json(blog);
   } catch (error) {
-    res.status(500).json({ error: "Error uploading blog" });
+    res.status(500).json({ error: "Error uploading blog", details: error });
   }
 });
 
@@ -161,65 +164,60 @@ app.get("/api/blogs/:blog_id", async (req, res) => {
 
 // --- Event Schema and Routes ---
 
-
 // Define Mongoose Schema for Events
-const eventSchema = new mongoose.Schema({
-  event_date: { type: Date, required: true },
-  event_image: { type: String, required: true }, // Image for the event
+const EventSchema = new mongoose.Schema(
+  {
+    imageUrl: { type: String, required: true },
+    date: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+
+const Event = mongoose.model("Event", EventSchema);
+
+// Configure Multer for Cloudinary (Event Uploads)
+const eventStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "events",
+    allowed_formats: ["jpg", "png", "jpeg"],
+  },
 });
+const eventUpload = multer({ storage: eventStorage });
 
-const Event = mongoose.model("Event", eventSchema);
-
-// API to upload event data (only event_date and event_image)
-app.post("/api/events", uploadCloudinary.single("event_image"), async (req, res) => {
+// API to Upload Image for Events
+app.post("/api/upload", eventUpload.single("image"), async (req, res) => {
   try {
-    const { event_date } = req.body;
+    const { date } = req.body;
+    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+    if (!date) return res.status(400).json({ error: "Date is required" });
 
-    if (!event_date) {
-      return res.status(400).json({ message: "Event date is required" });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({ message: "Event image is required" });
-    }
-
-    const event = new Event({
-      event_date: new Date(event_date), // Parse the date to ensure it's a valid Date object
-      event_image: req.file.path,        // Store Cloudinary URL of the uploaded image
+    const newImage = new Event({
+      imageUrl: req.file.path,
+      date: new Date(date),
     });
 
-    await event.save();
-    res.status(201).json(event);
+    await newImage.save();
+    res.status(201).json(newImage);
   } catch (error) {
-    res.status(500).json({ error: "Error uploading event" });
+    res.status(500).json({ error: "Error uploading image" });
   }
 });
 
-// API to fetch all events
+// API to Fetch All Event Images
 app.get("/api/events", async (req, res) => {
   try {
     const events = await Event.find();
     res.json(events);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching events" });
+    res.status(500).json({ error: "Error fetching images" });
   }
 });
 
-// API to fetch a single event by event ID
-app.get("/api/events/:event_id", async (req, res) => {
-  try {
-    const event = await Event.findById(req.params.event_id);
-    if (!event) {
-      return res.status(404).json({ message: "Event not found" });
-    }
-    res.json(event);
-  } catch (error) {
-    res.status(500).json({ error: "Server error" });
-  }
+// Home Route
+app.get("/", (req, res) => {
+  res.send("Hello, World!");
 });
-
-
-
 
 // Start Server
 const PORT = process.env.PORT || 5000;
