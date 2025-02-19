@@ -218,7 +218,5 @@ app.get("/api/blogs/:blog_id", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
-
-
 // Export the app (required for Vercel)
 module.exports = app;
