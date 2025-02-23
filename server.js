@@ -49,7 +49,8 @@ app.post("/api/carousel", upload.single("image"), async (req, res) => {
     const stream = cloudinary.uploader.upload_stream(
       { folder: "carousel" },
       async (error, cloudinaryResult) => {
-        if (error) return res.status(500).json({ message: "Upload failed", error });
+        if (error)
+          return res.status(500).json({ message: "Upload failed", error });
 
         // Save URLs to MongoDB
         const image = new CarouselImage({
@@ -117,27 +118,32 @@ const cloudinaryStorage = new CloudinaryStorage({
 const uploadCloudinary = multer({ storage: cloudinaryStorage });
 
 // API to upload blog data
-app.post("/api/blogs", uploadCloudinary.single("blog_image"), async (req, res) => {
-  try {
-    const { blog_title, blog_description } = req.body;
-    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
+app.post(
+  "/api/blogs",
+  uploadCloudinary.single("blog_image"),
+  async (req, res) => {
+    try {
+      const { blog_title, blog_description } = req.body;
+      if (!req.file)
+        return res.status(400).json({ message: "No image uploaded" });
 
-    // Generate the next blog_id
-    const blog_id = await getNextSequenceValue("blog_id");
+      // Generate the next blog_id
+      const blog_id = await getNextSequenceValue("blog_id");
 
-    const blog = new Blog({
-      blog_id,
-      blog_title,
-      blog_description,
-      blog_image: req.file.path,
-    });
+      const blog = new Blog({
+        blog_id,
+        blog_title,
+        blog_description,
+        blog_image: req.file.path,
+      });
 
-    await blog.save();
-    res.status(201).json(blog);
-  } catch (error) {
-    res.status(500).json({ error: "Error uploading blog", details: error });
+      await blog.save();
+      res.status(201).json(blog);
+    } catch (error) {
+      res.status(500).json({ error: "Error uploading blog", details: error });
+    }
   }
-});
+);
 
 // API to fetch all blogs
 app.get("/api/blogs", async (req, res) => {
@@ -162,62 +168,165 @@ app.get("/api/blogs/:blog_id", async (req, res) => {
   }
 });
 
-// --- Event Schema and Routes ---
+// Define Mongoose Schema for Songs
+const SongSchema = new mongoose.Schema({
+  image: { type: String, required: true },
+  title: { type: String, required: true },
+  purchaseLink: { type: String, required: true },
+  streamLink: { type: String, required: true },
+});
 
-// Define Mongoose Schema for Events
-const EventSchema = new mongoose.Schema(
-  {
-    imageUrl: { type: String, required: true },
-    date: { type: Date, required: true },
-  },
-  { timestamps: true }
-);
+const Song = mongoose.model("Song", SongSchema);
 
-const Event = mongoose.model("Event", EventSchema);
-
-// Configure Multer for Cloudinary (Event Uploads)
-const eventStorage = new CloudinaryStorage({
+// Configure Multer for Cloudinary (Music Uploads)
+const musicStorage = new CloudinaryStorage({
   cloudinary,
   params: {
-    folder: "events",
+    folder: "music",
     allowed_formats: ["jpg", "png", "jpeg"],
   },
 });
-const eventUpload = multer({ storage: eventStorage });
 
-// API to Upload Image for Events
-app.post("/api/upload", eventUpload.single("image"), async (req, res) => {
+const musicUpload = multer({ storage: musicStorage });
+
+// POST: Upload Image & Save Song Data
+app.post("/api/music", musicUpload.single("image"), async (req, res) => {
   try {
-    const { date } = req.body;
-    if (!req.file) return res.status(400).json({ message: "No image uploaded" });
-    if (!date) return res.status(400).json({ error: "Date is required" });
+    const { title, purchaseLink, streamLink } = req.body;
+    if (!req.file)
+      return res.status(400).json({ message: "No image uploaded" });
 
-    const newImage = new Event({
-      imageUrl: req.file.path,
-      date: new Date(date),
+    const newSong = new Song({
+      image: req.file.path,
+      title,
+      purchaseLink,
+      streamLink,
     });
 
-    await newImage.save();
-    res.status(201).json(newImage);
+    await newSong.save();
+    res.status(201).json({ message: "Song added successfully", song: newSong });
   } catch (error) {
-    res.status(500).json({ error: "Error uploading image" });
+    res.status(500).json({ error: "Error uploading song" });
   }
 });
 
-// API to Fetch All Event Images
-app.get("/api/events", async (req, res) => {
+// GET: Fetch All Songs
+app.get("/api/music", async (req, res) => {
   try {
-    const events = await Event.find();
-    res.json(events);
+    const songs = await Song.find();
+    res.status(200).json(songs);
   } catch (error) {
-    res.status(500).json({ error: "Error fetching images" });
+    res.status(500).json({ error: "Error fetching songs" });
   }
 });
 
-// Home Route
-app.get("/", (req, res) => {
-  res.send("Hello, World!");
+// Define Mongoose Schema for Album
+const AlbumSchema = new mongoose.Schema({
+  image: { type: String, required: true },
+  title: { type: String, required: true },
+  purchaseLink: { type: String, required: true },
+  streamLink: { type: String, required: true },
 });
+
+const Album = mongoose.model("Album", AlbumSchema);
+
+// Configure Multer for Cloudinary (Album Uploads)
+const AlbumStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "album",
+    allowed_formats: ["jpg", "png", "jpeg"],
+  },
+});
+
+const AlbumUpload = multer({ storage: AlbumStorage });
+
+// POST: Upload Image & Save Song Data
+app.post("/api/album", AlbumUpload.single("image"), async (req, res) => {
+  try {
+    const { title, purchaseLink, streamLink } = req.body;
+    if (!req.file)
+      return res.status(400).json({ message: "No image uploaded" });
+
+    const newAlbum = new Album({
+      image: req.file.path,
+      title,
+      purchaseLink,
+      streamLink,
+    });
+
+    await newAlbum.save();
+    res.status(201).json({ message: "Album added successfully", song: newAlbum });
+  } catch (error) {
+    res.status(500).json({ error: "Error uploading song" });
+  }
+});
+
+// GET: Fetch All Album
+app.get("/api/album", async (req, res) => {
+  try {
+    const Albums = await Album.find();
+    res.status(200).json(Albums);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching songs" });
+  }
+});
+
+// Define Mongoose Schema for Feature
+const FeatureSchema = new mongoose.Schema({
+  image: { type: String, required: true },
+  title: { type: String, required: true },
+  purchaseLink: { type: String, required: true },
+  streamLink: { type: String, required: true },
+});
+
+const Feature = mongoose.model("Feature", FeatureSchema);
+
+// Configure Multer for Cloudinary (Feature Uploads)
+const FeatureStorage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "feature",
+    allowed_formats: ["jpg", "png", "jpeg"],
+  },
+});
+
+const FeatureUpload = multer({ storage: FeatureStorage });
+
+// POST: Upload Image & Save Feature Data
+app.post("/api/feature", FeatureUpload.single("image"), async (req, res) => {
+  try {
+    const { title, purchaseLink, streamLink } = req.body;
+    if (!req.file)
+      return res.status(400).json({ message: "No image uploaded" });
+
+    const newFeature = new Feature({
+      image: req.file.path,
+      title,
+      purchaseLink,
+      streamLink,
+    });
+
+    await newFeature.save();
+    res.status(201).json({ message: "Features added successfully", song: newFeature });
+  } catch (error) {
+    res.status(500).json({ error: "Error uploading Features" });
+  }
+});
+
+// GET: Fetch All Album
+app.get("/api/feature", async (req, res) => {
+  try {
+    const Features = await Feature.find();
+    res.status(200).json(Features);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching songs" });
+  }
+});
+
+
+
+
 
 // Start Server
 const PORT = process.env.PORT || 5000;
