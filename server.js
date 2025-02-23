@@ -79,6 +79,48 @@ app.get("/api/carousel", async (req, res) => {
   }
 });
 
+// Define Mongoose Schemas
+const ImageSchema = new mongoose.Schema(
+  {
+    imageUrl: { type: String, required: true },
+    date: { type: Date, required: true },
+  },
+  { timestamps: true }
+);
+
+const Image = mongoose.model("Image", ImageSchema);
+
+
+// API to Upload Image for Events
+app.post("/api/upload", upload.single("image"), async (req, res) => {
+  try {
+    const { date } = req.body;
+    if (!date) {
+      return res.status(400).json({ error: "Date is required" });
+    }
+    const newImage = new Image({
+      imageUrl: req.file.path,
+      date: new Date(date),
+    });
+    await newImage.save();
+    res.status(201).json(newImage);
+  } catch (error) {
+    res.status(500).json({ error: "Error uploading image" });
+  }
+});
+
+
+// API to Fetch All Event Images
+app.get("/api/events", async (req, res) => {
+  try {
+    const images = await Image.find();
+    res.json(images);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching images" });
+  }
+});
+
+
 // Blog Schema
 const counterSchema = new mongoose.Schema({
   _id: { type: String, required: true },
